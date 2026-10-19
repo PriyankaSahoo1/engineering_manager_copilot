@@ -1,0 +1,865 @@
+{
+  "info": {
+    "name": "Engineering Manager Copilot",
+    "description": "Full API collection.\n\nStart with Sign In (seeded users), then projects/upload/etc.\n\nDemo users:\n- akanksha@gmail.com / Qwerty@123\n- raju@gmail.com / Qwerty@123",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    },
+    {
+      "key": "sourceId",
+      "value": ""
+    },
+    {
+      "key": "findingId",
+      "value": ""
+    },
+    {
+      "key": "decisionId",
+      "value": ""
+    },
+    {
+      "key": "questionId",
+      "value": ""
+    },
+    {
+      "key": "changeId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Health check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Sign In",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "    console.log('Token stored for user ' + body.user.id);",
+                  "}",
+                  "pm.test('signin returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailId\": \"akanksha@gmail.com\",\n  \"password\": \"Qwerty@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/signin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "signin"
+              ]
+            },
+            "description": "Signs in a company user already seeded in MongoDB.\n\nBody: emailId (or email) + password. No public signup — users must exist in DB.\n\nDemo users:\n- akanksha@gmail.com / Qwerty@123\n- raju@gmail.com / Qwerty@123\n\nThe test script stores accessToken automatically."
+          }
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the logged in user.\n\n401 'Invalid or expired token' once the 60 minute expiry passes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Projects",
+      "item": [
+        {
+          "name": "Create project",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('projectId', pm.response.json().project.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Payments platform review\",\n  \"objective\": \"Assess production readiness, resilience and security risk.\",\n  \"analysis_focus\": \"Disaster recovery, secrets handling and incident response.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects"
+              ]
+            },
+            "description": "name (1-120) and objective (1-500) are required. analysis_focus (max 500) is optional.\n\nBoth required fields are also trimmed, so a whitespace-only value returns 400 rather than being accepted.\n\nobjective and analysis_focus become the retrieval query for the AI review, so the more specific they are the sharper the findings."
+          }
+        },
+        {
+          "name": "List projects",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get project",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}"
+              ]
+            },
+            "description": "Includes aiReviewStatus, which moves not_started -> processing -> completed / partial / failed."
+          }
+        },
+        {
+          "name": "Delete project",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Sources",
+      "item": [
+        {
+          "name": "Upload sources (multiple files)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body.sources && body.sources.length) {",
+                  "        pm.collectionVariables.set('sourceId', body.sources[0].id);",
+                  "    }",
+                  "    console.log(body.uploadedCount + ' uploaded, ' + body.failedCount + ' failed');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": [],
+                  "description": "Pick a PDF, DOCX or TXT file"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": [],
+                  "description": "Add more rows with the same key to upload several files at once"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/sources/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "sources",
+                "upload"
+              ]
+            },
+            "description": "Multipart upload. Use the SAME key 'files' for every file - repeated parts are how the array is sent.\n\nLimits: PDF, DOCX, TXT only; at most 10 files per request; 25 MB per file; empty files rejected.\n\nEach file is handled independently, so one bad file does not fail the batch. status is 'success' when all landed and 'partial' otherwise, with failures listed under 'failed'. 400 only if nothing landed at all.\n\nDo not set Content-Type by hand - Postman sets the multipart boundary."
+          }
+        },
+        {
+          "name": "List sources",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "sources"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete source",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/sources/{{sourceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "sources",
+                "{{sourceId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. AI Review",
+      "item": [
+        {
+          "name": "AI trigger (reviews every source)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const d = pm.response.json().data;",
+                  "    console.log(d.status + ': ' + d.reviewedCount + '/' + d.sourceCount +",
+                  "                ' sources, ' + d.findingCount + ' findings');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/ai-trigger",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "ai-trigger"
+              ]
+            },
+            "description": "No request body. Reviews EVERY source on the project, up to 4 in parallel.\n\nReturns counts and per-source rows, not the findings themselves - read them from the Findings, Questions and Review Brief endpoints.\n\nstatus is 'completed' (all succeeded), 'partial' (some failed, see the 'failed' array) or 'failed'. Top level counts sum over successful sources only.\n\n400: unknown project, no sources on the project, or every source failed.\n500: anything else, including missing GROQ_API_KEY.\n\nThis is SYNCHRONOUS and holds the connection for the whole run - two small text files take roughly 75 seconds and PDFs are much slower. Raise the Postman request timeout before running it against real documents."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Findings",
+      "item": [
+        {
+          "name": "List findings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const f = pm.response.json().data.findings;",
+                  "    if (f.length) { pm.collectionVariables.set('findingId', f[0].id); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/findings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "findings"
+              ]
+            },
+            "description": "Each finding carries id, title, summary, priority, category, section, page, confidence, needsAttention, suggestedQuestion, evidence[] and created_at.\n\nEvidence is embedded and every entry has the verbatim quote backing the finding.\n\nNote: an unknown project id returns 200 with findingCount 0, not 404 - this endpoint has no ownership check."
+          }
+        },
+        {
+          "name": "Delete finding",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/findings/{{findingId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "findings",
+                "{{findingId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Questions",
+      "item": [
+        {
+          "name": "List questions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/questions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "questions"
+              ]
+            },
+            "description": "Questions raised by the AI review, sorted by created_at ascending. 404 if the project is not yours.\n\nThe question text field is 'text' (renamed from 'question'). Rows written before the rename still read correctly via a fallback. sourceId is no longer returned - trace a question to its file through findingId."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const q = pm.response.json().data.questions;",
+                  "    if (q.length) { pm.collectionVariables.set('questionId', q[0].id); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get question",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/questions/{{questionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "questions",
+                "{{questionId}}"
+              ]
+            },
+            "description": "404 for an unknown question or a project that is not yours."
+          }
+        },
+        {
+          "name": "Delete question",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/questions/{{questionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "questions",
+                "{{questionId}}"
+              ]
+            },
+            "description": "Removes the question and decrements the project question_count, guarded so it never drops below zero. A second delete returns 404 and does not decrement again."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Decisions",
+      "item": [
+        {
+          "name": "Create decision",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('decisionId', pm.response.json().data.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Adopt active-passive regional deployment\",\n  \"description\": \"Improves availability and reduces RTO.\",\n  \"owner_name\": \"Hannah N\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions"
+              ]
+            },
+            "description": "title is required (1-200, trimmed - whitespace only returns 400). description, owner_name and finding_id are optional.\n\nCreated with status 'open' and resolvedAt null, and increments the project decision_count."
+          }
+        },
+        {
+          "name": "Create decision linked to a finding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Define database recovery objectives\",\n  \"description\": \"Set and rehearse an RPO/RTO for the payments database.\",\n  \"owner_name\": \"Platform team\",\n  \"finding_id\": \"{{findingId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions"
+              ]
+            },
+            "description": "finding_id is validated against the same project and user - an unknown or foreign finding returns 404.\n\nRun 'List findings' first so {{findingId}} is populated."
+          }
+        },
+        {
+          "name": "List decisions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions"
+              ]
+            },
+            "description": "Sorted by created_at ascending. 404 if the project is not yours."
+          }
+        },
+        {
+          "name": "Update decision (partial)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Adopt active-passive regional deployment (approved)\",\n  \"owner_name\": \"Hannah N\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions/{{decisionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions",
+                "{{decisionId}}"
+              ]
+            },
+            "description": "True partial update - only the fields you send change.\n\nAn omitted field is left alone; an explicit null clears it. An empty body {} returns 400.\n\nupdated_at is always bumped."
+          }
+        },
+        {
+          "name": "Resolve decision",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions/{{decisionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions",
+                "{{decisionId}}"
+              ]
+            },
+            "description": "Stamps resolvedAt. Re-resolving keeps the original timestamp. Any value other than 'open' or 'resolved' returns 422."
+          }
+        },
+        {
+          "name": "Reopen decision",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"open\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions/{{decisionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions",
+                "{{decisionId}}"
+              ]
+            },
+            "description": "Clears resolvedAt back to null."
+          }
+        },
+        {
+          "name": "Delete decision",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/decisions/{{decisionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "decisions",
+                "{{decisionId}}"
+              ]
+            },
+            "description": "Hard delete. Decrements the project decision_count, guarded so it never goes below zero. A second delete returns 404 and does not decrement again."
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Changes",
+      "item": [
+        {
+          "name": "List changes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const c = pm.response.json().data.changes;",
+                  "    if (c.length) { pm.collectionVariables.set('changeId', c[0].id); }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/changes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "changes"
+              ]
+            },
+            "description": "Changes the AI review identified in the sources, sorted by created_at ascending.\n\nchangeType is one of: added, modified, removed, unresolved, planned.\n\n404 if the project is not yours."
+          }
+        },
+        {
+          "name": "Get change",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/changes/{{changeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "changes",
+                "{{changeId}}"
+              ]
+            },
+            "description": "404 for an unknown change or a project that is not yours."
+          }
+        },
+        {
+          "name": "Delete change",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/changes/{{changeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "changes",
+                "{{changeId}}"
+              ]
+            },
+            "description": "Hard delete. No counter is decremented - projects carry no change_count field. A second delete returns 404."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Review Brief",
+      "item": [
+        {
+          "name": "Get review brief",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/projects/{{projectId}}/review-brief",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "projects",
+                "{{projectId}}",
+                "review-brief"
+              ]
+            },
+            "description": "The consolidated view of everything the review produced, rebuilt once at the end of each AI trigger. Only exists after a review has run."
+          }
+        }
+      ]
+    }
+  ]
+}
